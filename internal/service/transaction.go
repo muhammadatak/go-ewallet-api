@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/muhammadatak/go-e-wallet/domain"
@@ -11,18 +12,21 @@ import (
 )
 
 type transactionService struct {
-	accountRepository     domain.AccountRepository
-	transactionRepository domain.TransactionRepository
-	cacheRepository       domain.CacheRepository
+	accountRepository      domain.AccountRepository
+	transactionRepository  domain.TransactionRepository
+	cacheRepository        domain.CacheRepository
+	notificationRepository domain.NotificationRepository
 }
 
 func NewTransaction(accountRepository domain.AccountRepository,
 	transactionRepository domain.TransactionRepository,
-	cacheRepository domain.CacheRepository) domain.TransactionService {
+	cacheRepository domain.CacheRepository,
+	notificationRepository domain.NotificationRepository) domain.TransactionService {
 	return &transactionService{
-		accountRepository:     accountRepository,
-		transactionRepository: transactionRepository,
-		cacheRepository:       cacheRepository,
+		accountRepository:      accountRepository,
+		transactionRepository:  transactionRepository,
+		cacheRepository:        cacheRepository,
+		notificationRepository: notificationRepository,
 	}
 }
 
@@ -131,5 +135,30 @@ func (t *transactionService) TransferExecute(ctx context.Context, req dto.Transf
 		return err
 	}
 
+	go t.notificationAfterTransfer(myAccount, dofAccount, reqInq.Amount)
+
 	return nil
+}
+
+func (t transactionService) notificationAfterTransfer(sofAccount domain.Account, dofAccount domain.Account, amount float64) {
+	notificationSender := domain.Notification{
+		UserId:    sofAccount.UserId,
+		Title:     "Transfer Succeed",
+		Body:      fmt.Sprintf("Transfer valued %.2f succeed", amount),
+		IsRead:    0,
+		Status:    1,
+		CreatedAt: time.Now(),
+	}
+
+	notificationReceiver := domain.Notification{
+		UserId:    dofAccount.UserId,
+		Title:     "Funds Received",
+		Body:      fmt.Sprintf("Funds valued %.2f Received", amount),
+		IsRead:    0,
+		Status:    1,
+		CreatedAt: time.Now(),
+	}
+
+	_ = t.notificationRepository.Insert(context.Background(), &notificationSender)
+	_ = t.notificationRepository.Insert(context.Background(), &notificationReceiver)
 }

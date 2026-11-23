@@ -30,16 +30,19 @@ func main() {
 	//repos
 	userRepos := repository.NewUser(dbConn)
 	accountRepos := repository.NewAccount(dbConn)
-	TransactionRepos := repository.NewTransaction(dbConn)
+	transactionRepos := repository.NewTransaction(dbConn)
+	notificationRepos := repository.NewNotification(dbConn)
 
 	//service
 	emailService := service.NewEmail(cnf)
 	userService := service.NewUser(userRepos, cacheConn, cnf, emailService)
-	transactionService := service.NewTransaction(accountRepos, TransactionRepos, cacheConn)
+	transactionService := service.NewTransaction(accountRepos, transactionRepos, cacheConn, notificationRepos)
+	notificationService := service.NewNotification(notificationRepos, userRepos)
 
 	//api
 	api.NewUser(app, userService)
 	api.NewTransfer(app, transactionService, jwtMidd)
+	api.NewNotification(app, notificationService, jwtMidd)
 
 	log.Fatal(app.Listen(cnf.Server.Host + ":" + cnf.Server.Port))
 
