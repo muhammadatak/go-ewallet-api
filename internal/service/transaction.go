@@ -12,21 +12,21 @@ import (
 )
 
 type transactionService struct {
-	accountRepository      domain.AccountRepository
-	transactionRepository  domain.TransactionRepository
-	cacheRepository        domain.CacheRepository
-	notificationRepository domain.NotificationRepository
+	accountRepository     domain.AccountRepository
+	transactionRepository domain.TransactionRepository
+	cacheRepository       domain.CacheRepository
+	notificationService   domain.NotificationService
 }
 
 func NewTransaction(accountRepository domain.AccountRepository,
 	transactionRepository domain.TransactionRepository,
 	cacheRepository domain.CacheRepository,
-	notificationRepository domain.NotificationRepository) domain.TransactionService {
+	notificationService domain.NotificationService) domain.TransactionService {
 	return &transactionService{
-		accountRepository:      accountRepository,
-		transactionRepository:  transactionRepository,
-		cacheRepository:        cacheRepository,
-		notificationRepository: notificationRepository,
+		accountRepository:     accountRepository,
+		transactionRepository: transactionRepository,
+		cacheRepository:       cacheRepository,
+		notificationService:   notificationService,
 	}
 }
 
@@ -141,24 +141,9 @@ func (t *transactionService) TransferExecute(ctx context.Context, req dto.Transf
 }
 
 func (t transactionService) notificationAfterTransfer(sofAccount domain.Account, dofAccount domain.Account, amount float64) {
-	notificationSender := domain.Notification{
-		UserId:    sofAccount.UserId,
-		Title:     "Transfer Succeed",
-		Body:      fmt.Sprintf("Transfer valued %.2f succeed", amount),
-		IsRead:    0,
-		Status:    1,
-		CreatedAt: time.Now(),
+	data := map[string]string{
+		"amount": fmt.Sprintf("%.2f", amount),
 	}
-
-	notificationReceiver := domain.Notification{
-		UserId:    dofAccount.UserId,
-		Title:     "Funds Received",
-		Body:      fmt.Sprintf("Funds valued %.2f Received", amount),
-		IsRead:    0,
-		Status:    1,
-		CreatedAt: time.Now(),
-	}
-
-	_ = t.notificationRepository.Insert(context.Background(), &notificationSender)
-	_ = t.notificationRepository.Insert(context.Background(), &notificationReceiver)
+	_ = t.notificationService.Insert(context.Background(), sofAccount.UserId, "TRANSFER", data)
+	_ = t.notificationService.Insert(context.Background(), dofAccount.UserId, "TRANSFER_DES", data)
 }

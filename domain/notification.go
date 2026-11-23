@@ -25,4 +25,5 @@ type NotificationRepository interface {
 
 type NotificationService interface {
 	FindByUserId(ctx context.Context, id int64) ([]dto.NotificationData, error)
+	Insert(ctx context.Context, userId int64, code string, data map[string]string) error
 }
