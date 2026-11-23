@@ -6,7 +6,8 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	Token string `json:"token"`
+	Token  string `json:"token"`
+	UserId int64  `json:"-"`
 }
 
 type RegisterRequest struct {

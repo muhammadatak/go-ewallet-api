@@ -41,8 +41,11 @@ func main() {
 	templateRepos := repository.NewTemplate(dbConn)
 	topUpRepos := repository.NewTopUp(dbConn)
 	factorRepos := repository.NewFactor(dbConn)
+	loginLogRepos := repository.NewLoginLog(dbConn)
 
 	//service
+	ipCheckerService := service.NewIpChecker()
+	fdsService := service.NewFds(ipCheckerService, loginLogRepos)
 	emailService := service.NewEmail(cnf)
 	factorService := service.NewFactor(factorRepos)
 	userService := service.NewUser(userRepos, cacheConn, cnf, emailService)
@@ -51,7 +54,7 @@ func main() {
 	midtransService := service.NewMidtrans(cnf)
 	topUpService := service.NewTopUp(notificationService, midtransService, topUpRepos, accountRepos, transactionRepos)
 	//api
-	api.NewUser(app, userService)
+	api.NewUser(app, userService, fdsService)
 	api.NewTransfer(app, transactionService, factorService, jwtMidd)
 	api.NewNotification(app, notificationService, jwtMidd)
 	api.NewTopUpApi(app, topUpService, jwtMidd)

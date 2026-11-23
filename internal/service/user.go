@@ -129,7 +129,8 @@ func (u *userService) Login(ctx context.Context, req dto.LoginRequest) (dto.Auth
 	}
 
 	return dto.AuthResponse{
-		Token: token,
+		Token:  token,
+		UserId: user.Id,
 	}, nil
 
 }

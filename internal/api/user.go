@@ -13,11 +13,13 @@ import (
 
 type userApi struct {
 	userService domain.UserService
+	fdsService  domain.FdsService
 }
 
-func NewUser(app *fiber.App, userService domain.UserService) {
+func NewUser(app *fiber.App, userService domain.UserService, fdsService domain.FdsService) {
 	ua := userApi{
 		userService: userService,
+		fdsService:  fdsService,
 	}
 
 	app.Post("/login", ua.Login)
@@ -47,7 +49,9 @@ func (ua userApi) Login(ctx fiber.Ctx) error {
 		return ctx.Status(errorStatus(err)).
 			JSON(dto.CreateResponseError(err.Error()))
 	}
-
+	if !ua.fdsService.IsAuthorized(c, ctx.Get("X-FORWARDED-FOR"), res.UserId) {
+		return ctx.SendStatus(http.StatusUnauthorized)
+	}
 	return ctx.JSON(dto.CreateResponseSuccess(res))
 }
 
