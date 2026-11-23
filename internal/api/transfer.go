@@ -13,11 +13,13 @@ import (
 
 type transferApi struct {
 	transactionService domain.TransactionService
+	factorService      domain.FactorService
 }
 
-func NewTransfer(app *fiber.App, transactionService domain.TransactionService, jwtMidd fiber.Handler) {
+func NewTransfer(app *fiber.App, transactionService domain.TransactionService, factorService domain.FactorService, jwtMidd fiber.Handler) {
 	ta := transferApi{
 		transactionService: transactionService,
+		factorService:      factorService,
 	}
 
 	transfer := app.Group("/transfer", jwtMidd)
@@ -77,6 +79,13 @@ func (ta transferApi) TransferExecute(ctx fiber.Ctx) error {
 
 	userId, err := GetUserId(ctx)
 	if err != nil {
+		return ctx.Status(errorStatus(err)).JSON(dto.CreateResponseError(err.Error()))
+	}
+
+	if err = ta.factorService.ValidatePIN(c, dto.ValidatePinReq{
+		PIN:    req.PIN,
+		UserId: userId,
+	}); err != nil {
 		return ctx.Status(errorStatus(err)).JSON(dto.CreateResponseError(err.Error()))
 	}
 

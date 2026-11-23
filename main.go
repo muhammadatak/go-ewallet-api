@@ -39,18 +39,23 @@ func main() {
 	transactionRepos := repository.NewTransaction(dbConn)
 	notificationRepos := repository.NewNotification(dbConn)
 	templateRepos := repository.NewTemplate(dbConn)
+	topUpRepos := repository.NewTopUp(dbConn)
+	factorRepos := repository.NewFactor(dbConn)
 
 	//service
 	emailService := service.NewEmail(cnf)
+	factorService := service.NewFactor(factorRepos)
 	userService := service.NewUser(userRepos, cacheConn, cnf, emailService)
 	notificationService := service.NewNotification(notificationRepos, userRepos, templateRepos, hub)
-
 	transactionService := service.NewTransaction(accountRepos, transactionRepos, cacheConn, notificationService)
-
+	midtransService := service.NewMidtrans(cnf)
+	topUpService := service.NewTopUp(notificationService, midtransService, topUpRepos, accountRepos, transactionRepos)
 	//api
 	api.NewUser(app, userService)
-	api.NewTransfer(app, transactionService, jwtMidd)
+	api.NewTransfer(app, transactionService, factorService, jwtMidd)
 	api.NewNotification(app, notificationService, jwtMidd)
+	api.NewTopUpApi(app, topUpService, jwtMidd)
+	api.NewMidtrans(app, midtransService, topUpService)
 
 	sse.NewNotification(app, jwtMidd, hub)
 	log.Fatal(app.Listen(cnf.Server.Host + ":" + cnf.Server.Port))

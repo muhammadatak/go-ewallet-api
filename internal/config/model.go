@@ -6,6 +6,7 @@ type Config struct {
 	Jwt      Jwt
 	Email    Email
 	Redis    Redis
+	Midtrans Midtrans
 }
 
 type Server struct {
@@ -37,4 +38,9 @@ type Email struct {
 type Redis struct {
 	Addr string
 	Pass string
+}
+
+type Midtrans struct {
+	Key    string
+	IsProd bool
 }
