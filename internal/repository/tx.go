@@ -21,7 +21,7 @@ type txRepository struct {
 	db *goqu.Database
 }
 
-func NewTransactor(con *sql.DB) domain.TxRepository {
+func NewTx(con *sql.DB) domain.TxRepository {
 	return &txRepository{
 		db: goqu.New("default", con),
 	}

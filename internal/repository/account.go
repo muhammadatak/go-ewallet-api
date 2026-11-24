@@ -12,6 +12,8 @@ type accountRepository struct {
 	db *goqu.Database
 }
 
+// Insert implements [domain.AccountRepository].
+
 func NewAccount(con *sql.DB) domain.AccountRepository {
 	return &accountRepository{
 		db: goqu.New("default", con),
@@ -45,5 +47,11 @@ func (a *accountRepository) Update(ctx context.Context, account *domain.Account)
 		Where(goqu.C("id").Eq(account.Id)).Set(goqu.Record{"balance": account.Balance}).Executor()
 	_, err := dataset.ExecContext(ctx)
 
+	return err
+}
+
+func (a *accountRepository) Insert(ctx context.Context, account *domain.Account) error {
+	executor := getExecutor(ctx, a.db).Insert("accounts").Rows(account).Returning("id").Executor()
+	_, err := executor.ExecContext(ctx)
 	return err
 }

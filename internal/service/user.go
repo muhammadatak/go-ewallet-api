@@ -16,18 +16,27 @@ import (
 )
 
 type userService struct {
-	cnf             *config.Config
-	userRepository  domain.UserRepository
-	cacheRepository domain.CacheRepository
-	emailService    domain.EmailService
+	cnf              *config.Config
+	userRepository   domain.UserRepository
+	cacheRepository  domain.CacheRepository
+	emailService     domain.EmailService
+	accountRepoitory domain.AccountRepository
+	txRepository     domain.TxRepository
 }
 
-func NewUser(userRepository domain.UserRepository, cacheRepository domain.CacheRepository, cnf *config.Config, emailService domain.EmailService) domain.UserService {
+func NewUser(userRepository domain.UserRepository,
+	cacheRepository domain.CacheRepository,
+	cnf *config.Config,
+	emailService domain.EmailService,
+	accountRepoitory domain.AccountRepository,
+	txRepository domain.TxRepository) domain.UserService {
 	return &userService{
-		userRepository:  userRepository,
-		cacheRepository: cacheRepository,
-		cnf:             cnf,
-		emailService:    emailService,
+		userRepository:   userRepository,
+		cacheRepository:  cacheRepository,
+		cnf:              cnf,
+		emailService:     emailService,
+		accountRepoitory: accountRepoitory,
+		txRepository:     txRepository,
 	}
 }
 func (u *userService) Register(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error) {
@@ -51,7 +60,24 @@ func (u *userService) Register(ctx context.Context, req dto.RegisterRequest) (dt
 		Password: string(hashPassword),
 		Phone:    req.Phone,
 	}
-	err = u.userRepository.Insert(ctx, &user)
+
+	err = u.txRepository.WithTransaction(ctx, func(txCtx context.Context) error {
+		err = u.userRepository.Insert(ctx, &user)
+
+		if err != nil {
+			return err
+		}
+		err = u.accountRepoitory.Insert(ctx, &domain.Account{
+			UserId:        user.Id,
+			AccountNumber: util.GenerateOTPCode(),
+			Balance:       0,
+		})
+
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 
 	if err != nil {
 		return dto.RegisterResponse{}, err

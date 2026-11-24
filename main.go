@@ -34,6 +34,7 @@ func main() {
 	}
 
 	//repos
+	txRepos := repository.NewTx(dbConn)
 	userRepos := repository.NewUser(dbConn)
 	accountRepos := repository.NewAccount(dbConn)
 	transactionRepos := repository.NewTransaction(dbConn)
@@ -48,7 +49,7 @@ func main() {
 	fdsService := service.NewFds(ipCheckerService, loginLogRepos)
 	emailService := service.NewEmail(cnf)
 	factorService := service.NewFactor(factorRepos)
-	userService := service.NewUser(userRepos, cacheConn, cnf, emailService)
+	userService := service.NewUser(userRepos, cacheConn, cnf, emailService, accountRepos, txRepos)
 	notificationService := service.NewNotification(notificationRepos, userRepos, templateRepos, hub)
 	transactionService := service.NewTransaction(accountRepos, transactionRepos, cacheConn, notificationService)
 	midtransService := service.NewMidtrans(cnf)
